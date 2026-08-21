@@ -34,6 +34,27 @@ Four-fold expanding-window validation is also run inside the pre-2019 training s
 
 The nonlinear models therefore show a positive mean gain in both expanding-window validation and the final case study. Logistic regression is essentially unchanged.
 
+## Small out-of-sample backtest
+
+The prediction model produces a stress probability `p` after each market close. The optional `backtest.py` converts it into a simple defensive allocation:
+
+```text
+next-day S&P 500 exposure = 1 - today's stress probability
+cash exposure             = today's stress probability
+```
+
+The signal is shifted by one trading day, so information from today's close can only affect tomorrow's position. The test also charges 5 basis points for each unit of turnover. It uses no short position and no threshold selected on the test period.
+
+| Strategy | Total return | Annualized return | Volatility | Sharpe | Maximum drawdown |
+|---|---:|---:|---:|---:|---:|
+| Buy and hold | 23.52% | 15.21% | 28.42% | 0.64 | -33.92% |
+| Classical signal | 9.56% | 6.31% | 12.50% | 0.55 | -18.04% |
+| Classical + TDA signal | **12.72%** | **8.35%** | **12.46%** | **0.71** | **-17.91%** |
+
+The combined signal improves return and Sharpe over the otherwise identical classical risk overlay. Buy and hold has the highest raw return during this period, but also more than twice the volatility and a much deeper drawdown.
+
+This is the economic-validation step after predictive validation. It asks whether the statistical improvement survives after forecasts are translated into positions, delayed until they are tradable and charged transaction costs.
+
 ## Prediction target
 
 At date `t`, the target is one when annualized root-mean-square S&P 500 volatility over days `t+1`, `t+2` and `t+3` exceeds 25%:
@@ -96,7 +117,7 @@ The project deliberately uses the same simple structure as the earlier TDA and v
 7. compare three models and three feature sets;
 8. save metrics and a chart.
 
-The main file contains **333 lines**. It has no custom classes, type annotations, JSON handling, command-line parser or parallel-processing layer.
+The main file contains **333 lines**. It has no custom classes, type annotations, JSON handling, command-line parser or parallel-processing layer. The optional backtest is a separate **115-line** file in the same repository, so it can be studied independently.
 
 ## Run
 
@@ -105,6 +126,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 python tda_market_crash_predictor.py
+python backtest.py
 ```
 
 The first run downloads adjusted prices and computes the persistence features. Both are saved under `data/` so later runs are faster.
@@ -120,6 +142,9 @@ python -m pytest -q
 
 ```text
 results/
+  backtest_daily.csv
+  backtest_equity.png
+  backtest_metrics.csv
   cross_validation_results.csv
   test_results.csv
   test_predictions.csv
@@ -132,6 +157,8 @@ results/
 - Daily prices omit intraday and options-implied information.
 - The ETF universe is fixed through time.
 - Overlapping three-day targets are dependent even though split boundaries are purged.
+- The backtest assumes zero return on cash and does not model financing, slippage or market impact.
+- Classifier probabilities are used directly as risk scores and are not explicitly calibrated.
 - This is a feature-engineering demonstration, not an investment strategy.
 
 ## References
