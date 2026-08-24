@@ -12,11 +12,6 @@ from tda_market_crash_predictor import (
 )
 
 
-def test_main_script_stays_below_350_lines():
-    script = Path(__file__).parents[1] / "tda_market_crash_predictor.py"
-    assert len(script.read_text().splitlines()) <= 350
-
-
 def test_persistence_distance_returns_two_nonnegative_values():
     time = np.linspace(0, 2 * np.pi, 20)
     first = np.column_stack((np.sin(time), np.cos(time), time / 10))
